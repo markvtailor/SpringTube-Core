@@ -33,7 +33,7 @@ build/
 .vscode/
 ### Example user template template
 ### Example user template
-
+.env
 # IntelliJ project files
 .idea
 *.iml

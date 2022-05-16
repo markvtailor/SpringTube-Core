@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class SpringtubeApplication {
 
 	public static void main(String[] args) {
-
+		System.setProperty("aws.accessKeyId","123");
 		SpringApplication.run(SpringtubeApplication.class, args);
 	}
 

@@ -1,14 +1,11 @@
 package com.spring.tests.springtube.Services;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
-import com.amazonaws.services.lambda.model.Environment;
+import com.spring.tests.springtube.Beans.S3ClientEmulator;
 import com.spring.tests.springtube.Entities.VideoEntity;
 import com.spring.tests.springtube.Entities.ViewEntity;
 import com.spring.tests.springtube.Repositories.VideoRepository;
 
 import com.spring.tests.springtube.Repositories.ViewRepository;
-import org.apache.http.client.CredentialsProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -41,19 +38,16 @@ public class VideoService  {
     private VideoRepository videoRepository;
     @Autowired
     ViewRepository viewRepository;
+    @Autowired
+    S3ClientEmulator emulator;
+
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String CONTENT_LENGTH = "Content-Length";
     public static final String VIDEO_CONTENT = "video/";
 
-    AwsBasicCredentials awsCreds = AwsBasicCredentials.create("123","xyz");
-    final StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(awsCreds);
     public VideoEntity uploading(String author, String name, String description, MultipartFile file) throws IOException, URISyntaxException {
         author = author.toLowerCase();
-        System.setProperty("aws.accessKeyId","123");
-        final S3Client s3 = S3Client.builder().endpointOverride(new URI(localstackPath)).credentialsProvider(credentialsProvider).region(Region.EU_NORTH_1).build();
-        ListBucketsRequest listBucketsRequest = ListBucketsRequest.builder().build();
-        ListBucketsResponse listBucketsResponse = s3.listBuckets(listBucketsRequest);
-        HeadBucketRequest headBucketRequest = HeadBucketRequest.builder().bucket(author).build();
+        S3Client s3 = emulator.initS3();
         if (!checkBucketExistence(author,s3)){
             S3Waiter s3Waiter = s3.waiter();
             CreateBucketRequest bucketRequest = CreateBucketRequest.builder().bucket(author).build();
@@ -61,7 +55,6 @@ public class VideoService  {
             HeadBucketRequest bucketRequestWait = HeadBucketRequest.builder().bucket(author).build();
             WaiterResponse<HeadBucketResponse> waiterResponse = s3Waiter.waitUntilBucketExists(bucketRequestWait);
             waiterResponse.matched().response().ifPresent(System.out::println);
-            System.out.println("Bucket " + author + " is ready");
         }
         final String videoUUID = String.valueOf(UUID.randomUUID());
         PutObjectRequest request = PutObjectRequest.builder()
